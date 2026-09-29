@@ -2,7 +2,7 @@
 window.rxSdk = window.rxSdk || {
   async init(){
     if(!LIFF_CONFIG.liffId||!LIFF_CONFIG.gasUrl)throw Error('薬局の画面を準備中です。トークからお送りください。');
-    await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://static.line-scdn.net/liff/edge/2/sdk.js';s.onload=resolve;s.onerror=reject;document.head.append(s);});
+    if(!window.liff)throw Error('読み込みできませんでした。通信を確認して開き直してください。');
     await liff.init({liffId:LIFF_CONFIG.liffId});
     if(!liff.isLoggedIn()){liff.login();throw Error('LINEでログインしています。');}
   },
