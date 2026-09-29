@@ -8,8 +8,13 @@ window.rxSdk = window.rxSdk || {
   },
   token(){return liff.getIDToken();},close(){liff.closeWindow();},
   async request(body){
-    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),120000);
-    try{return await (await fetch(LIFF_CONFIG.gasUrl,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body),signal:controller.signal,redirect:'follow',credentials:'omit'})).json();}
+    // AbortControllerのないWebViewでも待ち時間を制限する。再送はapp側の照会判定に任せる。
+    const controller=typeof AbortController==='function'?new AbortController():null;
+    let timer;
+    const timeout=new Promise((resolve,reject)=>{timer=setTimeout(()=>{if(controller)controller.abort();reject(Error('通信を確認できません。少し待ってからお試しください。'));},120000);});
+    const options={method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body),redirect:'follow',credentials:'omit'};
+    if(controller)options.signal=controller.signal;
+    try{return await Promise.race([fetch(LIFF_CONFIG.gasUrl,options).then(response=>response.json()),timeout]);}
     finally{clearTimeout(timer);}
   }
 };

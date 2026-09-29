@@ -13,3 +13,8 @@ button.primary:active:not(:disabled){background:#115e59;color:white}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes pulse{50%{opacity:.35}}
 @media(prefers-reduced-motion:reduce){.spinner{animation:pulse 1.5s ease-in-out infinite}button:active:not(:disabled){transform:none}}
+
+/* 閉じる・文字サイズを常時表示し、長い店名は次の行へ。 */
+header{flex-wrap:wrap}#pharmacy-heading{flex:1;min-width:0;overflow-wrap:break-word}header .close-button{background:#eee;color:#444;border-color:#bbb;box-shadow:0 3px 0 #bbb}
+#app-version{text-align:center;font-size:12px;color:#64736f;padding:12px}
+@media(max-width:420px){#pharmacy-heading{order:3;flex-basis:100%}}

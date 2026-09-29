@@ -1,5 +1,27 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>処方せんを送る | サンロくん</title><link rel="stylesheet" href="style.css"><script defer src="https://static.line-scdn.net/liff/edge/2/sdk.js" data-liff-sdk></script><script defer src="config.js"></script><script defer src="sdk.js"></script><script defer src="app.js"></script></head><body>
-<header><span id="pharmacy-heading">処方せんを送る</span><button id="font" disabled>文字を大きく</button></header>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>処方せんを送る | サンロくん</title><meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<script>
+const APP_VERSION = '2026.09.29-1';
+(function () {
+  var key = 'fujikawa-rx-version', query = '?v=' + APP_VERSION;
+  try {
+    if (localStorage.getItem(key) !== APP_VERSION) {
+      localStorage.setItem(key, APP_VERSION);
+      // URLも確認し、保存を無視するWebViewでも再読込は1回に留める。
+      if (location.search !== query) location.replace(location.pathname + query);
+    }
+  } catch (error) { /* 保存不可でも画面を開く。 */ }
+})();
+</script>
+<script defer src="https://static.line-scdn.net/liff/edge/2/sdk.js" data-liff-sdk></script>
+<script>
+document.write('<link rel="stylesheet" href="style.css?v=' + APP_VERSION + '">');
+['config.js', 'sdk.js', 'app.js'].forEach(function (file) {
+  document.write('<script defer src="' + file + '?v=' + APP_VERSION + '"><\/script>');
+});
+</script></head><body>
+<header><button id="header-close" class="close-button" type="button">✕ 閉じる</button><span id="pharmacy-heading">処方せんを送る</span><button id="font" disabled>文字を大きく</button></header>
 <div id="notice" role="status" aria-live="polite"></div><main id="main" aria-live="polite"><section class="panel"><h1>処方せんの写真を送ってね</h1><div class="progress" role="status"><span class="spinner" aria-hidden="true"></span>読み込み中…</div><button disabled>カメラで撮る</button><button disabled>アルバムから選ぶ</button></section></main>
 <input id="camera" type="file" accept="image/*" capture="environment" hidden><input id="album" type="file" accept="image/*" hidden>
+<footer id="app-version"></footer>
+<script>document.getElementById('app-version').textContent = '版 ' + APP_VERSION;</script>
 </body></html>
