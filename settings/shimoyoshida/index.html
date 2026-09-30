@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>業務設定</title>
+  <script>
+    window.EXEC_URL = 'https://script.google.com/macros/s/AKfycbyY7rwAfjavfs7XgatZMBrd6oIPhd4tOhqDwJg1WHrS1aQ0yMnUWuNnYvD6rLhuVUAG/exec';
+    window.STORE_NAME = 'サンロード調剤 下吉田店';
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; font-family: sans-serif; color: #243b30; background: #f6faf7; }
+    header { flex: 0 0 auto; padding: 9px 12px; background: #16724A; color: white; font-size: 14px; }
+    main { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+    iframe { display: block; width: 100%; height: calc(100vh + 60px); border: 0; visibility: hidden; }
+    #loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 14px; }
+    #loading[hidden] { display: none; }
+    .spinner { width: 24px; height: 24px; border: 3px solid #d5e6dc; border-top-color: #16724A; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+    footer { flex: 0 0 auto; padding: 7px 12px; text-align: center; font-size: 12px; background: #f6faf7; }
+    a { color: #16724A; }
+  </style>
+</head>
+<body>
+  <header id="heading"></header>
+  <main>
+    <div id="loading" role="status"><span class="spinner" aria-hidden="true"></span><span>設定画面を読込中…</span></div>
+    <iframe id="settings" title="業務設定" allow="clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe>
+  </main>
+  <footer>画面が出ないときは、<a id="direct" target="_blank" rel="noopener noreferrer">こちらを直接開いてください</a></footer>
+  <script>
+    document.title = window.STORE_NAME + '　業務設定';
+    document.getElementById('heading').textContent = document.title;
+    document.getElementById('direct').href = window.EXEC_URL;
+    const frame = document.getElementById('settings');
+    frame.onload = function () {
+      document.getElementById('loading').hidden = true;
+      frame.style.visibility = 'visible';
+    };
+    frame.src = window.EXEC_URL;
+  </script>
+</body>
+</html>
