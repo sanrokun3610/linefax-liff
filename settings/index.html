@@ -124,12 +124,12 @@
       if (pending) return;
       if (!validRegistration()) { waiting = false; clearTimeout(readyTimer); button.disabled = false; return; }
       waiting = false; clearTimeout(readyTimer); pending = true;
-      message.textContent = registering ? '登録中…' : 'ログイン中…';
+      message.textContent = registering ? '登録中…（30 秒ほどかかることがあります）' : 'ログイン中…（少し時間がかかります）';
       loginTimer = setTimeout(function () {
         pending = false; button.disabled = false;
-        message.textContent = 'つながりませんでした。もう一度押してください';
+        message.textContent = '時間がかかっています。もう一度押すか、少し待ってから画面を再読み込みしてください';
         password.value = '';
-      }, 15000);
+      }, registering ? 60000 : 45000);
       if (registering) {
         peer.postMessage({type:'linefax-settings-register', code:document.getElementById('setupCode').value,
           loginId:document.getElementById('registerId').value, password:password.value,
@@ -157,12 +157,12 @@
         if (!ok) return;
         if (!peer) { peer = event.source; peerOrigin = event.origin; }
         peer.postMessage({type:'linefax-settings-hello', storeKey:storeKey}, peerOrigin);
-        if (data.loggedIn === true && !registering) {
+        if (data.loggedIn === true) {
           waiting = false; pending = false; clearTimeout(readyTimer); clearTimeout(loginTimer);
           button.disabled = false; showApp(true); password.value = '';
         } else if (waiting) sendLogin();
-      } else if (peer && data.type === (registering ? 'linefax-settings-register-result' : 'linefax-settings-login-result') && pending && typeof data.ok === 'boolean') {
-        pending = false; clearTimeout(loginTimer); button.disabled = false;
+      } else if (peer && ['linefax-settings-register-result', 'linefax-settings-login-result'].includes(data.type) && typeof data.ok === 'boolean' && (data.ok || (pending && data.type === (registering ? 'linefax-settings-register-result' : 'linefax-settings-login-result')))) {
+        waiting = false; pending = false; clearTimeout(readyTimer); clearTimeout(loginTimer); button.disabled = false;
         message.textContent = data.ok ? '' : (registering ? registrationMessage(data.message) : 'IDまたはパスワードが違います');
         showApp(data.ok);
         password.value = '';
