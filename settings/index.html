@@ -43,7 +43,7 @@
   <header id="heading"></header>
   <main>
     <div id="loading" role="status"><span class="spinner" aria-hidden="true"></span><span>設定画面を読込中…</span></div>
-    <section id="loginPanel">
+    <section id="loginPanel" hidden="hidden">
       <form id="loginForm" method="post" action="#" onsubmit="return false">
         <h1 id="loginHeading"></h1>
         <p><label for="loginId">ログインID</label><input name="username" autocomplete="username" id="loginId" type="text" autocapitalize="none" spellcheck="false" required="required" maxlength="100"></p>
@@ -83,6 +83,7 @@
     document.getElementById('loginHeading').textContent = 'お店の設定にログイン';
     let peer = null, peerOrigin = null, waiting = false, pending = false, readyTimer = null, loginTimer = null;
     let registering = false;
+    let loadingTimer = null;
     function switchForm(value) {
       if (waiting || pending) return;
       password.value = ''; message.textContent = '';
@@ -101,9 +102,11 @@
       document.getElementById('setupCodeField').hidden = true;
       document.getElementById('setupConfirmed').hidden = false;
       switchForm(true);
+      showApp(false);
       document.getElementById('registerId').focus();
     }
     function showApp(loggedIn) {
+      clearTimeout(loadingTimer);
       panel.hidden = loggedIn;
       frame.style.visibility = loggedIn ? 'visible' : 'hidden';
       document.getElementById('loading').hidden = true;
@@ -155,12 +158,18 @@
           }
         } catch (e) { return; }
         if (!ok) return;
+        clearTimeout(loadingTimer);
         if (!peer) { peer = event.source; peerOrigin = event.origin; }
         peer.postMessage({type:'linefax-settings-hello', storeKey:storeKey}, peerOrigin);
-        if (data.loggedIn === true) {
+        if (data.restoring === true) {
+          loadingTimer = setTimeout(function () { showApp(false); }, 30000);
+        } else if (data.loggedIn === true) {
           waiting = false; pending = false; clearTimeout(readyTimer); clearTimeout(loginTimer);
           button.disabled = false; showApp(true); password.value = '';
-        } else if (waiting) sendLogin();
+        } else {
+          showApp(false);
+          if (waiting) sendLogin();
+        }
       } else if (peer && ['linefax-settings-register-result', 'linefax-settings-login-result'].includes(data.type) && typeof data.ok === 'boolean' && (data.ok || (pending && data.type === (registering ? 'linefax-settings-register-result' : 'linefax-settings-login-result')))) {
         waiting = false; pending = false; clearTimeout(readyTimer); clearTimeout(loginTimer); button.disabled = false;
         message.textContent = data.ok ? '' : (registering ? registrationMessage(data.message) : 'IDまたはパスワードが違います');
@@ -185,7 +194,11 @@
     }
     document.getElementById('loginForm').addEventListener('submit', submitAuth);
     document.getElementById('registerForm').addEventListener('submit', submitAuth);
-    frame.onload = function () { document.getElementById('loading').hidden = true; };
+    frame.onload = function () {
+      if (peer) return;
+      clearTimeout(loadingTimer);
+      loadingTimer = setTimeout(function () { showApp(false); }, 20000);
+    };
     frame.src = window.EXEC_URL;
   </script>
 </body>
