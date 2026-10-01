@@ -20,6 +20,12 @@
     iframe { display: block; width: 100%; height: calc(100vh + 60px); border: 0; visibility: hidden; }
     #loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 14px; }
     #loading[hidden] { display: none; }
+    #loginPanel { position: absolute; inset: 0; overflow: auto; padding: 24px 16px; background: #f6faf7; }
+    #loginPanel[hidden] { display: none; }
+    form { max-width: 440px; margin: auto; }
+    input:not([type="checkbox"]) { display: block; width: 100%; padding: 12px; font-size: 16px; }
+    button { padding: 12px 24px; background: #16724A; color: white; border: 0; border-radius: 6px; font-size: 16px; }
+    #loginMessage { min-height: 1.5em; }
     .spinner { width: 24px; height: 24px; border: 3px solid #d5e6dc; border-top-color: #16724A; border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
@@ -31,6 +37,16 @@
   <header id="heading"></header>
   <main>
     <div id="loading" role="status"><span class="spinner" aria-hidden="true"></span><span>設定画面を読込中…</span></div>
+    <section id="loginPanel">
+      <form id="loginForm" method="post" action="#" onsubmit="return false">
+        <h1 id="loginHeading"></h1>
+        <p><label for="loginId">ログインID</label><input name="username" autocomplete="username" id="loginId" type="text" autocapitalize="none" spellcheck="false" required="required" maxlength="100"></p>
+        <p><label for="password">パスワード</label><input type="password" name="password" autocomplete="current-password" id="password" required="required" maxlength="1024"></p>
+        <p><label><input type="checkbox" id="remember" checked="checked"> このブラウザで保持（365日）</label></p>
+        <p id="loginMessage" role="status" aria-live="polite"></p>
+        <button type="submit" id="loginButton">ログイン</button>
+      </form>
+    </section>
     <iframe id="settings" title="業務設定" allow="clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe>
   </main>
   <footer>画面が出ないときは、<a id="direct" target="_blank" rel="noopener noreferrer">こちらを直接開いてください</a></footer>
@@ -39,10 +55,74 @@
     document.getElementById('heading').textContent = document.title;
     document.getElementById('direct').href = window.EXEC_URL;
     const frame = document.getElementById('settings');
-    frame.onload = function () {
+    const panel = document.getElementById('loginPanel');
+    const password = document.getElementById('password');
+    const button = document.getElementById('loginButton');
+    const message = document.getElementById('loginMessage');
+    document.getElementById('loginHeading').textContent = window.STORE_NAME + ' ログイン';
+    let peer = null, peerOrigin = null, waiting = false, pending = false, readyTimer = null, loginTimer = null;
+    function showApp(loggedIn) {
+      panel.hidden = loggedIn;
+      frame.style.visibility = loggedIn ? 'visible' : 'hidden';
       document.getElementById('loading').hidden = true;
-      frame.style.visibility = 'visible';
-    };
+    }
+    function sendLogin() {
+      if (pending) return;
+      waiting = false; clearTimeout(readyTimer); pending = true;
+      message.textContent = 'ログイン中…';
+      loginTimer = setTimeout(function () {
+        pending = false; button.disabled = false;
+        message.textContent = 'つながりませんでした。もう一度押してください';
+        password.value = '';
+      }, 15000);
+      peer.postMessage({type:'linefax-settings-login', loginId:document.getElementById('loginId').value,
+        password:password.value, remember:document.getElementById('remember').checked}, peerOrigin);
+    }
+    window.addEventListener('message', function (event) {
+      if (!/^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/.test(event.origin)) return;
+      const data = event.data;
+      if (!data || typeof data !== 'object' || !event.source) return;
+      if (peer && (event.source !== peer || event.origin !== peerOrigin)) return;
+      if (data.type === 'linefax-settings-ready') {
+        // GASの入れ子iframeを許可し、別ウィンドウからのreadyは拒否する。
+        let w = event.source, ok = false;
+        try {
+          for (let i = 0; i < 5 && w; i++) {
+            if (w === frame.contentWindow) { ok = true; break; }
+            if (w === w.parent) break;
+            w = w.parent;
+          }
+        } catch (e) { return; }
+        if (!ok) return;
+        if (!peer) { peer = event.source; peerOrigin = event.origin; }
+        peer.postMessage({type:'linefax-settings-hello'}, peerOrigin);
+        if (data.loggedIn === true) {
+          waiting = false; pending = false; clearTimeout(readyTimer); clearTimeout(loginTimer);
+          button.disabled = false; showApp(true); password.value = '';
+        } else if (waiting) sendLogin();
+      } else if (peer && data.type === 'linefax-settings-login-result' && pending && typeof data.ok === 'boolean') {
+        pending = false; clearTimeout(loginTimer); button.disabled = false;
+        message.textContent = data.ok ? '' : 'IDまたはパスワードが違います';
+        showApp(data.ok);
+        password.value = '';
+      } else if (peer && data.type === 'linefax-settings-logged-out') {
+        waiting = false; pending = false; clearTimeout(readyTimer); clearTimeout(loginTimer); button.disabled = false;
+        password.value = ''; message.textContent = ''; showApp(false);
+      }
+    });
+    document.getElementById('loginForm').addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (button.disabled) return;
+      button.disabled = true;
+      if (peer) { sendLogin(); return; }
+      waiting = true; message.textContent = '読み込み中…';
+      readyTimer = setTimeout(function () {
+        waiting = false; button.disabled = false;
+        message.textContent = '読み込みに時間がかかっています。再試行するか、下の直接リンクを開いてください。';
+        password.value = '';
+      }, 15000);
+    });
+    frame.onload = function () { document.getElementById('loading').hidden = true; };
     frame.src = window.EXEC_URL;
   </script>
 </body>
