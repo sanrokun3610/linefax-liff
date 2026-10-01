@@ -8,6 +8,12 @@
   <meta http-equiv="Expires" content="0">
   <title>業務設定</title>
   <script>
+    const setupUrl = new URL(location.href);
+    const setupLink = setupUrl.searchParams.get('setup');
+    if (setupUrl.searchParams.has('setup')) {
+      setupUrl.searchParams.delete('setup');
+      history.replaceState(history.state, '', setupUrl.pathname + setupUrl.search + setupUrl.hash);
+    }
     window.EXEC_URL = 'https://script.google.com/macros/s/AKfycbyY7rwAfjavfs7XgatZMBrd6oIPhd4tOhqDwJg1WHrS1aQ0yMnUWuNnYvD6rLhuVUAG/exec';
 
   </script>
@@ -49,10 +55,11 @@
       </form>
       <form id="registerForm" method="post" action="#" onsubmit="return false" hidden="hidden">
         <h1>はじめての登録</h1>
-        <p><label for="setupCode">登録コード</label><input id="setupCode" name="code" inputmode="numeric" autocomplete="one-time-code" required="required" placeholder="1234-5678"></p>
+        <p id="setupCodeField"><label for="setupCode">登録コード</label><input id="setupCode" name="code" inputmode="numeric" autocomplete="one-time-code" required="required" placeholder="1234-5678"></p>
+        <p id="setupConfirmed" hidden="hidden">登録リンクを確認しました</p>
         <p><label for="registerId">ログイン ID</label><input id="registerId" name="username" autocomplete="username" placeholder="kuma-admin" autocapitalize="none" spellcheck="false" required="required" maxlength="100"></p>
         <p><label for="newPassword">新しいパスワード</label><input id="newPassword" name="password" type="password" autocomplete="new-password" minlength="16" maxlength="1024" passwordrules="minlength: 20; required: lower; required: upper; required: digit;" required="required"></p>
-        <p>パスワード欄を押すと Safari が強いパスワードを作ってくれます。そのまま使ってください（自動で保存されます）</p>
+        <p>ID を入れて、パスワード欄で「強力なパスワードを使用」を押し、登録する</p>
         <p><label for="registerName">名前</label><input id="registerName" name="name" value="サンロ太郎" required="required" maxlength="100"></p>
         <p id="registerMessage" role="status" aria-live="polite"></p>
         <button type="submit" id="registerButton">登録する</button>
@@ -88,6 +95,14 @@
     }
     document.getElementById('showRegister').addEventListener('click', function (event) { event.preventDefault(); switchForm(true); });
     document.getElementById('showLogin').addEventListener('click', function (event) { event.preventDefault(); switchForm(false); });
+    if (setupLink !== null) {
+      document.getElementById('setupCode').value = setupLink;
+      document.getElementById('setupCode').type = 'hidden';
+      document.getElementById('setupCodeField').hidden = true;
+      document.getElementById('setupConfirmed').hidden = false;
+      switchForm(true);
+      document.getElementById('registerId').focus();
+    }
     function showApp(loggedIn) {
       panel.hidden = loggedIn;
       frame.style.visibility = loggedIn ? 'visible' : 'hidden';
@@ -95,8 +110,8 @@
     }
     function registrationMessage(message){
      message=typeof message==='string'?message.replace(/^Error: /,''):'';
-     const fixed=['ID は半角英数字と _ . @ - だけ、パスワードは16文字以上にしてください','コードの期限が切れたか、発行されていません。もう一度発行してください','少し待ってからもう一度','保存できませんでした。もう一度','登録はできました。ログインを押してください'];
-     return fixed.includes(message)||/^コードが違います（あと [1-4] 回）$/.test(message)?message:'保存できませんでした。もう一度';
+     const fixed=['ID は半角英数字と _ . @ - だけ、パスワードは16文字以上にしてください','リンクの期限切れです。GAS でもう一度リンクを出してください','少し待ってからもう一度','保存できませんでした。もう一度','登録はできました。ログインを押してください'];
+     return fixed.includes(message)||/^コードが違います（あと [1-9] 回）$/.test(message)?message:'保存できませんでした。もう一度';
     }
     function validRegistration() {
       if (!registering) return true;
@@ -142,7 +157,7 @@
         if (!ok) return;
         if (!peer) { peer = event.source; peerOrigin = event.origin; }
         peer.postMessage({type:'linefax-settings-hello', storeKey:storeKey}, peerOrigin);
-        if (data.loggedIn === true) {
+        if (data.loggedIn === true && !registering) {
           waiting = false; pending = false; clearTimeout(readyTimer); clearTimeout(loginTimer);
           button.disabled = false; showApp(true); password.value = '';
         } else if (waiting) sendLogin();
