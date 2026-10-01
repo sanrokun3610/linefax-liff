@@ -45,6 +45,18 @@
         <p><label><input type="checkbox" id="remember" checked="checked"> このブラウザで保持（365日）</label></p>
         <p id="loginMessage" role="status" aria-live="polite"></p>
         <button type="submit" id="loginButton">ログイン</button>
+        <p><a href="#register" id="showRegister">はじめての登録・ID やパスワードを忘れたとき</a></p>
+      </form>
+      <form id="registerForm" method="post" action="#" onsubmit="return false" hidden="hidden">
+        <h1>はじめての登録</h1>
+        <p><label for="setupCode">登録コード</label><input id="setupCode" name="code" inputmode="numeric" autocomplete="one-time-code" required="required" maxlength="9" pattern="[0-9]{4}-?[0-9]{4}"></p>
+        <p><label for="registerId">ログイン ID</label><input id="registerId" name="username" autocomplete="username" placeholder="kuma-admin" autocapitalize="none" spellcheck="false" required="required" maxlength="100"></p>
+        <p><label for="newPassword">新しいパスワード</label><input id="newPassword" name="password" type="password" autocomplete="new-password" minlength="16" maxlength="1024" passwordrules="minlength: 20; required: lower; required: upper; required: digit;" required="required"></p>
+        <p>パスワード欄を押すと Safari が強いパスワードを作ってくれます。そのまま使ってください（自動で保存されます）</p>
+        <p><label for="registerName">名前</label><input id="registerName" name="name" value="サンロ太郎" required="required" maxlength="100"></p>
+        <p id="registerMessage" role="status" aria-live="polite"></p>
+        <button type="submit" id="registerButton">登録する</button>
+        <p><a href="#login" id="showLogin">ログインにもどる</a></p>
       </form>
     </section>
     <iframe id="settings" title="業務設定" allow="clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe>
@@ -58,11 +70,24 @@
     const storeKey = typeof requested === 'string' && /^[a-z]+$/.test(requested) ? requested : '';
     const frame = document.getElementById('settings');
     const panel = document.getElementById('loginPanel');
-    const password = document.getElementById('password');
-    const button = document.getElementById('loginButton');
-    const message = document.getElementById('loginMessage');
+    let password = document.getElementById('password');
+    let button = document.getElementById('loginButton');
+    let message = document.getElementById('loginMessage');
     document.getElementById('loginHeading').textContent = 'お店の設定にログイン';
     let peer = null, peerOrigin = null, waiting = false, pending = false, readyTimer = null, loginTimer = null;
+    let registering = false;
+    function switchForm(value) {
+      if (waiting || pending) return;
+      password.value = ''; message.textContent = '';
+      registering = value;
+      document.getElementById('loginForm').hidden = value;
+      document.getElementById('registerForm').hidden = !value;
+      password = document.getElementById(value ? 'newPassword' : 'password');
+      button = document.getElementById(value ? 'registerButton' : 'loginButton');
+      message = document.getElementById(value ? 'registerMessage' : 'loginMessage');
+    }
+    document.getElementById('showRegister').addEventListener('click', function (event) { event.preventDefault(); switchForm(true); });
+    document.getElementById('showLogin').addEventListener('click', function (event) { event.preventDefault(); switchForm(false); });
     function showApp(loggedIn) {
       panel.hidden = loggedIn;
       frame.style.visibility = loggedIn ? 'visible' : 'hidden';
@@ -71,12 +96,18 @@
     function sendLogin() {
       if (pending) return;
       waiting = false; clearTimeout(readyTimer); pending = true;
-      message.textContent = 'ログイン中…';
+      message.textContent = registering ? '登録中…' : 'ログイン中…';
       loginTimer = setTimeout(function () {
         pending = false; button.disabled = false;
         message.textContent = 'つながりませんでした。もう一度押してください';
         password.value = '';
       }, 15000);
+      if (registering) {
+        peer.postMessage({type:'linefax-settings-register', code:document.getElementById('setupCode').value,
+          loginId:document.getElementById('registerId').value, password:password.value,
+          name:document.getElementById('registerName').value, storeKey:storeKey}, peerOrigin);
+        return;
+      }
       peer.postMessage({type:'linefax-settings-login', loginId:document.getElementById('loginId').value,
         password:password.value, remember:document.getElementById('remember').checked, storeKey:storeKey}, peerOrigin);
     }
@@ -102,9 +133,9 @@
           waiting = false; pending = false; clearTimeout(readyTimer); clearTimeout(loginTimer);
           button.disabled = false; showApp(true); password.value = '';
         } else if (waiting) sendLogin();
-      } else if (peer && data.type === 'linefax-settings-login-result' && pending && typeof data.ok === 'boolean') {
+      } else if (peer && data.type === (registering ? 'linefax-settings-register-result' : 'linefax-settings-login-result') && pending && typeof data.ok === 'boolean') {
         pending = false; clearTimeout(loginTimer); button.disabled = false;
-        message.textContent = data.ok ? '' : 'IDまたはパスワードが違います';
+        message.textContent = data.ok ? '' : (registering ? '登録できませんでした。コードと入力内容を確認して、コードを発行し直してください' : 'IDまたはパスワードが違います');
         showApp(data.ok);
         password.value = '';
       } else if (peer && data.type === 'linefax-settings-logged-out') {
@@ -112,7 +143,7 @@
         password.value = ''; message.textContent = ''; showApp(false);
       }
     });
-    document.getElementById('loginForm').addEventListener('submit', function (event) {
+    function submitAuth(event) {
       event.preventDefault();
       if (button.disabled) return;
       button.disabled = true;
@@ -123,7 +154,9 @@
         message.textContent = '読み込みに時間がかかっています。再試行するか、下の直接リンクを開いてください。';
         password.value = '';
       }, 15000);
-    });
+    }
+    document.getElementById('loginForm').addEventListener('submit', submitAuth);
+    document.getElementById('registerForm').addEventListener('submit', submitAuth);
     frame.onload = function () { document.getElementById('loading').hidden = true; };
     frame.src = window.EXEC_URL;
   </script>
