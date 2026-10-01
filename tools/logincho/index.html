@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>ログイン帳</title>
+<style>
+:root{--bg:#f6f4ee;--card:#fff;--ink:#22302a;--sub:#5b6b63;--line:#dfe3dc;--accent:#16724a;--accent-ink:#fff;--warn:#b5651d;--chip:#e8f2ec}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141a17;--card:#1d2521;--ink:#e6ece8;--sub:#9fb0a7;--line:#2f3a35;--accent:#3fb37f;--accent-ink:#0d1a13;--warn:#e0a060;--chip:#24342c}}
+:root[data-theme="dark"]{--bg:#141a17;--card:#1d2521;--ink:#e6ece8;--sub:#9fb0a7;--line:#2f3a35;--accent:#3fb37f;--accent-ink:#0d1a13;--warn:#e0a060;--chip:#24342c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,"Hiragino Sans","Noto Sans JP",sans-serif}
+.wrap{max-width:880px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:24px;margin:0 0 4px}.lead{color:var(--sub);margin:0 0 16px;font-size:14px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+input,textarea{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+button,.btn{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+button.primary,.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.big{font-size:17px;padding:12px 18px;width:100%;justify-content:center}
+.grp{margin:22px 0 8px;font-size:13px;font-weight:700;color:var(--sub);letter-spacing:.05em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.top{display:flex;gap:8px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.name{font-weight:700;font-size:17px}.url{font-size:12px;color:var(--sub);word-break:break-all}
+.rows{display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;margin-top:10px;align-items:center;font-size:14px}
+.k{color:var(--sub);font-size:13px}.v{word-break:break-all;font-family:ui-monospace,Menlo,monospace}
+.chip{display:inline-block;justify-self:start;background:var(--chip);border-radius:999px;padding:1px 10px;font-size:13px}
+.empty{color:var(--warn)}.note{margin-top:8px;font-size:13px;color:var(--sub);white-space:pre-wrap}
+.lock{max-width:440px;margin:10vh auto 0;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px}
+.lock p{font-size:14px;color:var(--sub)}.err{color:var(--warn);font-size:14px;min-height:1.4em;margin:6px 0}
+.or{display:flex;align-items:center;gap:8px;color:var(--sub);font-size:13px;margin:14px 0}.or:before,.or:after{content:"";flex:1;border-top:1px solid var(--line)}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);max-width:560px;width:calc(100% - 32px)}
+dialog label{display:block;font-size:13px;color:var(--sub);margin:10px 0 4px}
+.hide{display:none!important}.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:14px;z-index:9}
+.status{font-size:13px;color:var(--sub);margin:-4px 0 12px}
+@media (max-width:520px){.rows{grid-template-columns:auto 1fr}.rows .act{grid-column:2}}
+</style></head><body>
+<div class="wrap">
+<section id="lockView" class="lock">
+ <h1>ログイン帳</h1>
+ <div id="unlockBox">
+  <button class="primary big" id="pkBtn" type="button">Touch ID / Face ID で開く</button>
+  <div class="or">または</div>
+ </div>
+ <p id="lockMsg">合言葉を入れて開きます。</p>
+ <form id="lockForm" onsubmit="return false">
+  <input id="master" type="password" autocomplete="current-password" placeholder="合言葉">
+  <input id="master2" class="hide" type="password" autocomplete="new-password" placeholder="もう一度（確認）" style="margin-top:8px">
+  <div class="err" id="lockErr"></div>
+  <button class="primary" id="unlockBtn" type="submit">開く</button>
+ </form>
+ <div id="firstImport" class="hide" style="margin-top:14px"><label class="btn" for="restoreFile">別の端末のバックアップから始める</label><input id="restoreFile" type="file" accept=".json,application/json" class="hide"></div>
+ <p style="margin-top:16px">ID とパスワードは、この端末のブラウザの中に暗号化して保存します。どこにも送信しません。合言葉は予備の鍵です。紙に書いて保管してください。</p>
+</section>
+
+<section id="mainView" class="hide">
+ <h1>ログイン帳</h1>
+ <p class="lead">どこに・どのアカウントで入るかの一覧です。オレンジ色の「未記入」は、わかったときに「編集」で入れてください。</p>
+ <div class="status" id="pkStatus"></div>
+ <div class="bar">
+  <input id="q" placeholder="さがす（例：下吉田、増穂、GAS、info）" style="flex:1;min-width:180px">
+  <button id="addBtn">＋ 追加</button>
+  <button id="pkAddBtn">Touch ID / Face ID を登録</button>
+  <label class="btn" for="starterFile">初期データを読み込む</label><input id="starterFile" type="file" accept=".json,application/json" class="hide">
+  <button id="backupBtn">バックアップを保存</button>
+  <label class="btn" for="importFile">バックアップを読み込む</label><input id="importFile" type="file" accept=".json,application/json" class="hide">
+  <button id="lockBtn">鍵をかける</button>
+ </div>
+ <div id="list"></div>
+</section>
+</div>
+
+<dialog id="dlg"><form method="dialog" id="editForm">
+ <h2 id="dlgTitle" style="margin:0 0 4px;font-size:18px">編集</h2>
+ <label>まとまり</label><input name="group">
+ <label>名前</label><input name="name">
+ <label>URL</label><input name="url" inputmode="url">
+ <label>入るアカウント（Google など）</label><input name="account">
+ <label>ログイン ID</label><input name="login" autocomplete="off">
+ <label>パスワード</label><input name="pw" type="password" autocomplete="new-password">
+ <label>メモ</label><textarea name="note" rows="3"></textarea>
+ <div class="bar" style="margin-top:14px;justify-content:space-between">
+  <button value="delete" id="delBtn" type="submit">この行を消す</button>
+  <span style="display:flex;gap:8px"><button value="cancel" type="submit">やめる</button><button value="save" class="primary" type="submit">保存</button></span>
+ </div>
+</form></dialog>
+<div id="toast" class="toast hide"></div>
+
+<script>
+'use strict';
+const KEY='logincho-v2', ITER=310000, IDLE_MS=5*60*1000, FIELDS=['group','name','url','account','login','pw','note'];
+const $=s=>document.querySelector(s), enc=new TextEncoder(), dec=new TextDecoder();
+const b64=u=>{let s='';new Uint8Array(u).forEach(c=>s+=String.fromCharCode(c));return btoa(s)}, unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const rnd=n=>crypto.getRandomValues(new Uint8Array(n));
+let rows=null, dek=null, meta=null, idleT=null;
+function store(){try{return localStorage}catch(_){return null}}
+function readMeta(){try{const s=store();return s&&JSON.parse(s.getItem(KEY)||'null')}catch(_){return null}}
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.remove('hide');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.add('hide'),2200)}
+// --- crypto: rows are sealed with a random data key (DEK); the DEK is wrapped by the passphrase and by each passkey (PRF)
+async function passKek(pass,salt){const b=await crypto.subtle.importKey('raw',enc.encode(pass),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:ITER,hash:'SHA-256'},b,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
+async function prfKek(secret){const b=await crypto.subtle.importKey('raw',secret,'HKDF',false,['deriveKey']);return crypto.subtle.deriveKey({name:'HKDF',hash:'SHA-256',salt:enc.encode('logincho-prf-v1'),info:enc.encode('wrap')},b,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
+async function gcmEnc(key,bytes){const iv=rnd(12);return {iv:b64(iv),ct:b64(await crypto.subtle.encrypt({name:'AES-GCM',iv},key,bytes))}}
+async function gcmDec(key,o){return new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(o.iv)},key,unb64(o.ct)))}
+async function rawDek(){return new Uint8Array(await crypto.subtle.exportKey('raw',dek))}
+async function useDek(raw){dek=await crypto.subtle.importKey('raw',raw,'AES-GCM',true,['encrypt','decrypt'])}
+async function save(){meta.data=await gcmEnc(dek,enc.encode(JSON.stringify(rows)));const s=store();if(!s)return toast('この端末では保存できません。バックアップを保存してください');s.setItem(KEY,JSON.stringify(meta))}
+async function openWith(m,raw){await useDek(raw);rows=JSON.parse(dec.decode(await gcmDec(dek,m.data)));meta=m}
+// --- passkey (WebAuthn PRF)
+const pkSupported=()=>!!(window.PublicKeyCredential&&navigator.credentials&&window.isSecureContext&&location.hostname);
+async function pkGet(m){
+ const salt=unb64(m.pk[0].prfSalt);
+ const cred=await navigator.credentials.get({publicKey:{challenge:rnd(32),rpId:location.hostname,userVerification:'required',timeout:60000,
+  allowCredentials:m.pk.map(p=>({type:'public-key',id:unb64(p.id)})),extensions:{prf:{eval:{first:salt}}}}});
+ const r=cred.getClientExtensionResults().prf;if(!r||!r.results||!r.results.first)throw new Error('noprf');
+ const w=m.pk.find(p=>p.id===b64(cred.rawId));if(!w)throw new Error('unknown');return {w,secret:new Uint8Array(r.results.first)};
+}
+async function pkRegister(){
+ const salt=rnd(32), uid=rnd(16);
+ const cred=await navigator.credentials.create({publicKey:{rp:{name:'ログイン帳',id:location.hostname},user:{id:uid,name:'logincho',displayName:'ログイン帳'},
+  challenge:rnd(32),pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],timeout:60000,
+  authenticatorSelection:{residentKey:'required',requireResidentKey:true,userVerification:'required'},extensions:{prf:{eval:{first:salt}}}}});
+ const ext=cred.getClientExtensionResults().prf;if(!ext||ext.enabled===false)throw new Error('noprf');
+ const id=b64(cred.rawId);let secret=ext.results&&ext.results.first?new Uint8Array(ext.results.first):null;
+ const entry={id,prfSalt:b64(salt),wrap:null,added:new Date().toISOString().slice(0,10)};
+ if(!secret){const tmp={pk:[entry]};secret=(await pkGet(tmp)).secret}
+ entry.wrap=await gcmEnc(await prfKek(secret),await rawDek());meta.pk=(meta.pk||[]).filter(p=>p.id!==id).concat(entry);await save();
+}
+// --- lock screen
+function setupLock(){
+ const m=readMeta(), first=!m;
+ $('#unlockBox').classList.toggle('hide',first||!pkSupported()||!(m.pk&&m.pk.length));
+ $('#master2').classList.toggle('hide',!first);$('#firstImport').classList.toggle('hide',!first);
+ $('#lockMsg').textContent=first?'はじめに、予備の鍵になる合言葉を決めます（8文字以上）。':'合言葉を入れて開きます。';
+ $('#unlockBtn').textContent=first?'合言葉を決めて始める':'開く';$('#lockErr').textContent='';
+}
+$('#pkBtn').onclick=async()=>{$('#lockErr').textContent='';try{const m=readMeta();const {w,secret}=await pkGet(m);await openWith(m,await gcmDec(await prfKek(secret),w.wrap));show(true)}catch(e){$('#lockErr').textContent=e&&e.name==='NotAllowedError'?'取り消されました':'Touch ID / Face ID で開けませんでした。合言葉で開いてください'}};
+$('#lockForm').addEventListener('submit',async()=>{
+ const p=$('#master').value, m=readMeta();$('#lockErr').textContent='';
+ try{
+  if(!m){
+   if(p.length<8)return $('#lockErr').textContent='8文字以上にしてください';
+   if(p!==$('#master2').value)return $('#lockErr').textContent='確認と一致しません';
+   dek=await crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt','decrypt']);
+   const salt=rnd(16);meta={v:2,pass:{salt:b64(salt),...await gcmEnc(await passKek(p,salt),await rawDek())},pk:[]};rows=[];await save();
+  }else{await openWith(m,await gcmDec(await passKek(p,unb64(m.pass.salt)),m.pass))}
+  $('#master').value='';$('#master2').value='';show(true);
+  if(!meta.pk.length&&pkSupported())toast('「Touch ID / Face ID を登録」で、次から指や顔で開けます');
+ }catch(_){$('#lockErr').textContent='合言葉が違います'}
+});
+function show(open){
+ $('#lockView').classList.toggle('hide',open);$('#mainView').classList.toggle('hide',!open);
+ if(open){render();bump()}else{rows=null;dek=null;meta=null;$('#list').innerHTML='';setupLock()}
+}
+function bump(){clearTimeout(idleT);idleT=setTimeout(()=>{if(dek){show(false);toast('5分たったので鍵をかけました')}},IDLE_MS)}
+['click','keydown','input','touchstart'].forEach(e=>document.addEventListener(e,()=>{if(dek)bump()},{passive:true}));
+$('#lockBtn').onclick=()=>show(false);
+$('#pkAddBtn').onclick=async()=>{if(!pkSupported())return toast('このブラウザでは使えません（Safari をおすすめします）');try{await pkRegister();render();toast('登録しました。次から指や顔で開けます')}catch(e){toast(e&&e.message==='noprf'?'このブラウザは対応していません。Safari で登録してください':e&&e.name==='NotAllowedError'?'取り消されました':'登録できませんでした')}};
+// --- list
+function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function safeUrl(u){try{const x=new URL(u);return /^https?:$/.test(x.protocol)?x.href:''}catch(_){return ''}}
+function val(s){return s?`<span class="v">${esc(s)}</span>`:'<span class="empty">未記入</span>'}
+function render(){
+ $('#pkStatus').textContent=meta.pk.length?`Touch ID / Face ID：${meta.pk.length}件登録済み`:'Touch ID / Face ID：未登録（合言葉で開いています）';
+ const q=$('#q').value.trim().toLowerCase(), list=$('#list');list.innerHTML='';let g=null;
+ if(!rows.length)list.innerHTML='<div class="card">まだ何もありません。「初期データを読み込む」か「＋ 追加」で始めてください。</div>';
+ rows.filter(r=>!q||JSON.stringify([r.group,r.name,r.url,r.account,r.note,r.login]).toLowerCase().includes(q)).forEach(r=>{
+  if(r.group!==g){g=r.group;const h=document.createElement('div');h.className='grp';h.textContent=g||'その他';list.appendChild(h)}
+  const c=document.createElement('div');c.className='card';const u=safeUrl(r.url),noLogin=/ログイン不要/.test(r.account||'');
+  c.innerHTML=`<div class="top"><div><div class="name">${esc(r.name)}</div><div class="url">${esc(r.url)||'<span class="empty">URL 未記入</span>'}</div></div>
+   <div style="display:flex;gap:6px">${u?`<a class="btn primary" href="${esc(u)}" target="_blank" rel="noopener noreferrer">開く</a>`:''}<button data-edit="${r.id}">編集</button></div></div>
+   <div class="rows"><span class="k">アカウント</span>${r.account?`<span class="chip">${esc(r.account)}</span>`:'<span class="empty">未記入</span>'}<span></span>
+   ${noLogin?'':`<span class="k">ID</span>${val(r.login)}<span class="act">${r.login?`<button data-copy="login" data-id="${r.id}">コピー</button>`:''}</span>
+   <span class="k">パスワード</span><span class="v" data-pwv="${r.id}">${r.pw?'••••••••':'<span class="empty">未記入</span>'}</span><span class="act">${r.pw?`<button data-show="${r.id}">表示</button> <button data-copy="pw" data-id="${r.id}">コピー</button>`:''}</span>`}</div>
+   ${r.note?`<div class="note">${esc(r.note)}</div>`:''}`;
+  list.appendChild(c)});
+}
+$('#q').addEventListener('input',render);
+$('#list').addEventListener('click',async e=>{
+ const t=e.target.closest('button');if(!t)return;const find=id=>rows.find(r=>r.id===id);
+ if(t.dataset.copy){const r=find(t.dataset.id);try{await navigator.clipboard.writeText(r[t.dataset.copy]);toast('コピーしました')}catch(_){toast('コピーできませんでした')}}
+ else if(t.dataset.show){const r=find(t.dataset.show),el=document.querySelector(`[data-pwv="${t.dataset.show}"]`);const on=t.textContent==='表示';el.textContent=on?r.pw:'••••••••';t.textContent=on?'かくす':'表示'}
+ else if(t.dataset.edit)edit(find(t.dataset.edit));
+});
+let editing=null;
+function edit(r){editing=r;const f=$('#editForm');FIELDS.forEach(k=>f.elements[k].value=r?r[k]||'':'');$('#dlgTitle').textContent=r?'編集':'追加';$('#delBtn').classList.toggle('hide',!r);$('#dlg').showModal()}
+$('#addBtn').onclick=()=>edit(null);
+$('#dlg').addEventListener('close',async()=>{
+ const act=$('#dlg').returnValue,f=$('#editForm');
+ if(act==='save'){const row={};FIELDS.forEach(k=>row[k]=f.elements[k].value.trim());if(row.name){if(editing)Object.assign(editing,row);else rows.push({id:'u'+Date.now(),...row});await save();render();toast('保存しました')}}
+ else if(act==='delete'&&editing&&confirm('「'+editing.name+'」を消しますか？')){rows=rows.filter(r=>r!==editing);await save();render()}
+ f.elements.pw.value='';editing=null;
+});
+// --- starter (plain JSON, no secrets) / backup (encrypted)
+$('#starterFile').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;try{const arr=JSON.parse(await file.text());if(!Array.isArray(arr))throw 0;
+ let n=0;arr.forEach((x,i)=>{if(!x||!x.name)return;const key=(x.group||'')+'|'+x.name;if(rows.some(r=>(r.group||'')+'|'+r.name===key))return;const row={id:'s'+Date.now()+'_'+i};FIELDS.forEach(k=>row[k]=String(x[k]||''));rows.push(row);n++});
+ await save();render();toast(n+'件を追加しました。読み込んだファイルは消してかまいません')}catch(_){toast('読み込めませんでした')}};
+$('#backupBtn').onclick=async()=>{await save();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(meta)],{type:'application/json'}));a.download='ログイン帳バックアップ_'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('暗号化したまま保存しました')};
+async function restoreFrom(file,asFirst){
+ const m=JSON.parse(await file.text());const p=prompt('バックアップを作ったときの合言葉');if(p===null)return false;
+ let raw;
+ if(m.v===2){raw=await gcmDec(await passKek(p,unb64(m.pass.salt)),m.pass);await openWith(m,raw)}
+ else if(m.v===1){const k=await passKek(p,unb64(m.salt));const old=JSON.parse(dec.decode(await gcmDec(k,m)));
+  dek=await crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt','decrypt']);const salt=rnd(16);
+  meta={v:2,pass:{salt:b64(salt),...await gcmEnc(await passKek(p,salt),await rawDek())},pk:[]};rows=old}
+ else throw 0;
+ if(!asFirst&&!confirm('今の内容をバックアップの内容で置きかえますか？'))return false;
+ await save();return true;
+}
+$('#importFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{if(await restoreFrom(f,false)){render();toast('読み込みました')}}catch(_){toast('読み込めませんでした（合言葉かファイルが違います）')}};
+$('#restoreFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{if(await restoreFrom(f,true)){show(true);toast('読み込みました。この端末でも Touch ID / Face ID を使えます')}}catch(_){$('#lockErr').textContent='読み込めませんでした（合言葉かファイルが違います）'}};
+setupLock();
+</script></body></html>
