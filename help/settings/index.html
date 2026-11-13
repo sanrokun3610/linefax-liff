@@ -36,8 +36,9 @@ for(const button of buttons)button.addEventListener('click',()=>{
  video.currentTime=Number(button.dataset.start);
  video.scrollIntoView({behavior:'smooth',block:'center'});
  const pending=video.play();
- if(pending)pending.catch(()=>{document.getElementById('play-message').textContent='動画の再生ボタンを押してください。';});
+ if(pending)pending.catch(error=>{if(error.name==='NotAllowedError')document.getElementById('play-message').textContent='動画の再生ボタンを押してください。';});
 });
+video.addEventListener('playing',()=>{document.getElementById('play-message').textContent='';});
 video.addEventListener('timeupdate',()=>{
  let active=0;buttons.forEach((button,i)=>{if(video.currentTime>=Number(button.dataset.start))active=i;});
  buttons.forEach((button,i)=>button.setAttribute('aria-current',String(i===active)));
