@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>クスリのサンロード薬局　郷田店｜業務設定</title>
+  <script>
+    const setupUrl = new URL(location.href);
+    const setupLink = setupUrl.searchParams.get('setup');
+    if (setupUrl.searchParams.has('setup')) {
+      setupUrl.searchParams.delete('setup');
+      history.replaceState(history.state, '', setupUrl.pathname + setupUrl.search + setupUrl.hash);
+    }
+    window.EXEC_URL = 'https://script.google.com/macros/s/AKfycbyhkj8LUD-8ix1i3cktzKFtmAVjTxxiORg6cjTihD5HwdAitlIisloTF-3MUwu4lKRu3g/exec';
+
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; font-family: sans-serif; color: #243b30; background: #f6faf7; }
+    header { flex: 0 0 auto; padding: 9px 12px; background: #16724A; color: white; font-size: 14px; }
+    main { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+    iframe { display: block; width: 100%; height: 100%; border: 0; visibility: hidden; }
+    #loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 14px; }
+    #loading[hidden] { display: none; }
+    #loginPanel { position: absolute; inset: 0; overflow: auto; padding: 24px 16px; background: #f6faf7; }
+    #loginPanel[hidden] { display: none; }
+    form { max-width: 440px; margin: auto; }
+    input:not([type="checkbox"]) { display: block; width: 100%; padding: 12px; font-size: 16px; }
+    button { padding: 12px 24px; background: #16724A; color: white; border: 0; border-radius: 6px; font-size: 16px; }
+    #loginMessage { min-height: 1.5em; }
+    .spinner { width: 24px; height: 24px; border: 3px solid #d5e6dc; border-top-color: #16724A; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+    footer { flex: 0 0 auto; padding: 7px 12px; text-align: center; font-size: 12px; background: #f6faf7; }
+    a { color: #16724A; }
+  </style>
+</head>
+<body>
+  <header id="heading"></header>
+  <main>
+    <div id="loading" role="status"><span class="spinner" aria-hidden="true"></span><span>設定画面を読込中…</span></div>
+    <section id="loginPanel" hidden="hidden">
+      <form id="loginForm" method="post" action="#" onsubmit="return false">
+        <h1 id="loginHeading"></h1>
+        <p><label for="loginId">ログインID</label><input name="username" autocomplete="username" id="loginId" type="text" autocapitalize="none" spellcheck="false" required="required" maxlength="100"></p>
+        <p><label for="password">パスワード</label><input type="password" name="password" autocomplete="current-password" id="password" required="required" maxlength="1024"></p>
+        <p><label><input type="checkbox" id="remember" checked="checked"> このブラウザで保持（365日）</label></p>
+        <p id="loginMessage" role="status" aria-live="polite"></p>
+        <button type="submit" id="loginButton">ログイン</button>
+        <p><a href="#register" id="showRegister">はじめての登録・ID やパスワードを忘れたとき</a></p>
+      </form>
+      <form id="registerForm" method="post" action="#" onsubmit="return false" hidden="hidden">
+        <h1>はじめての登録</h1>
+        <p id="setupCodeField"><label for="setupCode">登録コード</label><input id="setupCode" name="code" inputmode="numeric" autocomplete="one-time-code" required="required" placeholder="1234-5678"></p>
+        <p id="setupConfirmed" hidden="hidden">登録リンクを確認しました</p>
+        <p><label for="registerId">ログイン ID</label><input id="registerId" name="username" autocomplete="username" placeholder="kuma-admin" autocapitalize="none" spellcheck="false" required="required" maxlength="100"></p>
+        <p><label for="newPassword">新しいパスワード</label><input id="newPassword" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="1024" passwordrules="minlength: 12; required: lower; required: upper; required: digit;" required="required"></p>
+        <p>ID を入れて、パスワード欄で「強力なパスワードを使用」を押し、登録する</p>
+        <p><label for="registerName">名前</label><input id="registerName" name="name" value="サンロ太郎" required="required" maxlength="100"></p>
+        <p id="registerMessage" role="status" aria-live="polite"></p>
+        <button type="submit" id="registerButton">登録する</button>
+        <p><a href="#login" id="showLogin">ログインにもどる</a></p>
+      </form>
+    </section>
+    <iframe id="settings" title="業務設定" allow="clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe>
+  </main>
+  <footer>画面が出ないときは、<a id="direct" target="_blank" rel="noopener noreferrer">こちらを直接開いてください</a></footer>
+  <script>
+    document.title = 'クスリのサンロード薬局　郷田店｜設定にログイン';
+    document.getElementById('heading').textContent = document.title;
+    document.getElementById('direct').href = window.EXEC_URL;
+    const storeKey = 'goda';
+    const frame = document.getElementById('settings');
+    const panel = document.getElementById('loginPanel');
+    let password = document.getElementById('password');
+    let button = document.getElementById('loginButton');
+    let message = document.getElementById('loginMessage');
+    document.getElementById('loginHeading').textContent = document.title;
+    let peer = null, peerOrigin = null, waiting = false, pending = false, readyTimer = null, loginTimer = null;
+    let registering = false;
+    let loadingTimer = null;
+    function switchForm(value) {
+      if (waiting || pending) return;
+      password.value = ''; message.textContent = '';
+      registering = value;
+      document.getElementById('loginForm').hidden = value;
+      document.getElementById('registerForm').hidden = !value;
+      password = document.getElementById(value ? 'newPassword' : 'password');
+      button = document.getElementById(value ? 'registerButton' : 'loginButton');
+      message = document.getElementById(value ? 'registerMessage' : 'loginMessage');
+    }
+    document.getElementById('showRegister').addEventListener('click', function (event) { event.preventDefault(); switchForm(true); });
+    document.getElementById('showLogin').addEventListener('click', function (event) { event.preventDefault(); switchForm(false); });
+    if (setupLink !== null) {
+      document.getElementById('setupCode').value = setupLink;
+      document.getElementById('setupCode').type = 'hidden';
+      document.getElementById('setupCodeField').hidden = true;
+      document.getElementById('setupConfirmed').hidden = false;
+      switchForm(true);
+      showApp(false);
+      document.getElementById('registerId').focus();
+    }
+    function showApp(loggedIn) {
+      clearTimeout(loadingTimer);
+      panel.hidden = loggedIn;
+      frame.style.visibility = loggedIn ? 'visible' : 'hidden';
+      document.getElementById('loading').hidden = true;
+    }
+    function registrationMessage(message){
+     message=typeof message==='string'?message.replace(/^Error: /,''):'';
+     const fixed=['ID は半角英数字と _ . @ - だけ、パスワードは12文字以上にしてください','リンクの期限切れです。GAS でもう一度リンクを出してください','少し待ってからもう一度','保存できませんでした。もう一度','登録はできました。ログインを押してください'];
+     return message.startsWith('保存できませんでした：')||fixed.includes(message)||/^コードが違います（あと [1-9] 回）$/.test(message)?message:'保存できませんでした。もう一度';
+    }
+    function validRegistration() {
+      if (!registering) return true;
+      const id = document.getElementById('registerId').value;
+      if (/^[A-Za-z0-9_.@-]{1,100}$/.test(id) && Array.from(password.value).length >= 12 && password.value.length <= 1024 && !/[,\r\n]/.test(password.value)) return true;
+      message.textContent = 'ID は半角英数字と _ . @ - だけ、パスワードは12文字以上にしてください';
+      return false;
+    }
+    function sendLogin() {
+      if (pending) return;
+      if (!validRegistration()) { waiting = false; clearTimeout(readyTimer); button.disabled = false; return; }
+      waiting = false; clearTimeout(readyTimer); pending = true;
+      message.textContent = registering ? '登録中…（30 秒ほどかかることがあります）' : 'ログイン中…（少し時間がかかります）';
+      loginTimer = setTimeout(function () {
+        pending = false; button.disabled = false;
+        message.textContent = '時間がかかっています。もう一度押すか、少し待ってから画面を再読み込みしてください';
+        password.value = '';
+      }, registering ? 60000 : 45000);
+      if (registering) {
+        peer.postMessage({type:'linefax-settings-register', code:document.getElementById('setupCode').value,
+          loginId:document.getElementById('registerId').value, password:password.value,
+          name:document.getElementById('registerName').value, storeKey:storeKey}, peerOrigin);
+        return;
+      }
+      peer.postMessage({type:'linefax-settings-login', loginId:document.getElementById('loginId').value,
+        password:password.value, remember:document.getElementById('remember').checked, storeKey:storeKey}, peerOrigin);
+    }
+    window.addEventListener('message', function (event) {
+      if (!/^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/.test(event.origin)) return;
+      const data = event.data;
+      if (!data || typeof data !== 'object' || !event.source) return;
+      if (peer && (event.source !== peer || event.origin !== peerOrigin)) return;
+      if (data.type === 'linefax-settings-ready') {
+        // GASの入れ子iframeを許可し、別ウィンドウからのreadyは拒否する。
+        let w = event.source, ok = false;
+        try {
+          for (let i = 0; i < 5 && w; i++) {
+            if (w === frame.contentWindow) { ok = true; break; }
+            if (w === w.parent) break;
+            w = w.parent;
+          }
+        } catch (e) { return; }
+        if (!ok) return;
+        clearTimeout(loadingTimer);
+        if (!peer) { peer = event.source; peerOrigin = event.origin; }
+        peer.postMessage({type:'linefax-settings-hello', storeKey:storeKey}, peerOrigin);
+        if (data.restoring === true) {
+          loadingTimer = setTimeout(function () { showApp(false); }, 30000);
+        } else if (data.loggedIn === true) {
+          waiting = false; pending = false; clearTimeout(readyTimer); clearTimeout(loginTimer);
+          button.disabled = false; showApp(true); password.value = '';
+        } else {
+          showApp(false);
+          if (waiting) sendLogin();
+        }
+      } else if (peer && ['linefax-settings-register-result', 'linefax-settings-login-result'].includes(data.type) && typeof data.ok === 'boolean' && (data.ok || (pending && data.type === (registering ? 'linefax-settings-register-result' : 'linefax-settings-login-result')))) {
+        waiting = false; pending = false; clearTimeout(readyTimer); clearTimeout(loginTimer); button.disabled = false;
+        message.textContent = data.ok ? '' : (registering ? registrationMessage(data.message) : 'IDまたはパスワードが違います');
+        showApp(data.ok);
+        password.value = '';
+      } else if (peer && data.type === 'linefax-settings-logged-out') {
+        waiting = false; pending = false; clearTimeout(readyTimer); clearTimeout(loginTimer); button.disabled = false;
+        password.value = ''; message.textContent = ''; showApp(false);
+      }
+    });
+    function submitAuth(event) {
+      event.preventDefault();
+      if (button.disabled || !validRegistration()) return;
+      button.disabled = true;
+      if (peer) { sendLogin(); return; }
+      waiting = true; message.textContent = '読み込み中…';
+      readyTimer = setTimeout(function () {
+        waiting = false; button.disabled = false;
+        message.textContent = '読み込みに時間がかかっています。再試行するか、下の直接リンクを開いてください。';
+        password.value = '';
+      }, 15000);
+    }
+    document.getElementById('loginForm').addEventListener('submit', submitAuth);
+    document.getElementById('registerForm').addEventListener('submit', submitAuth);
+    frame.onload = function () {
+      if (peer) return;
+      clearTimeout(loadingTimer);
+      loadingTimer = setTimeout(function () { showApp(false); }, 20000);
+    };
+    frame.src = window.EXEC_URL;
+  </script>
+</body>
+</html>
